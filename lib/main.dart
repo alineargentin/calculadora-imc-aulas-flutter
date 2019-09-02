@@ -16,8 +16,24 @@ class _HomeState extends State<Home> {
   GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   TextEditingController _weightController = TextEditingController();
-  TextEditingController _heightController = TextEditingController();
+  TextEditingController _heigthController = TextEditingController();
   String _result;
+  Color _resultColor = Colors.black;
+
+  bool _sexoMasculino = true;
+  bool _sexoFeminino = false;
+
+  /// Função para tratar a seleção do switch do sexo masculino
+  void _onSexoMasculinoChanged(bool value) => setState(() {
+        _sexoMasculino = value;
+        _sexoFeminino = !value; // marca o inverso no feminino
+      });
+
+  /// Função para tratar a seleção do switch do sexo feminino
+  void _onSexoFemininoChanged(bool value) => setState(() {
+        _sexoFeminino = value;
+        _sexoMasculino = !value; // marca o inverso no masculino
+      });
 
   @override
   void initState() {
@@ -27,9 +43,12 @@ class _HomeState extends State<Home> {
 
   void resetFields() {
     _weightController.text = '';
-    _heightController.text = '';
+    _heigthController.text = '';
     setState(() {
       _result = 'Informe seus dados';
+      _sexoMasculino = true;
+      _sexoFeminino = false;
+      _resultColor = Colors.black;
     });
   }
 
@@ -70,7 +89,12 @@ class _HomeState extends State<Home> {
           buildTextFormField(
               label: "Altura (cm)",
               error: "Insira uma altura!",
-              controller: _heightController),
+              controller: _heigthController),
+          // 1. Adicionar botões (Toggle ou Radio button)
+          // para escolha de gênero (masculino / feminino):
+          buildGenderLabel(),
+          buildSwitch("Masculino", _sexoMasculino, _onSexoMasculinoChanged),
+          buildSwitch("Feminino", _sexoFeminino, _onSexoFemininoChanged),
           buildTextResult(),
           buildCalculateButton(),
         ],
@@ -80,24 +104,36 @@ class _HomeState extends State<Home> {
 
   void calculateImc() {
     double weight = double.parse(_weightController.text);
-    double height = double.parse(_heightController.text) / 100.0;
-    double imc = weight / (height * height);
+    double heigth = double.parse(_heigthController.text) / 100.0;
 
+    // 4. Refatorar o código do aplicativo para utilizar a classe Pessoa:
+    Pessoa pessoa = new Pessoa(weight, heigth, _sexoFeminino);
+    pessoa.calculateImc();
     setState(() {
-      _result = "IMC = ${imc.toStringAsPrecision(2)}\n";
-      if (imc < 18.6)
-        _result += "Abaixo do peso";
-      else if (imc < 25.0)
-        _result += "Peso ideal";
-      else if (imc < 30.0)
-        _result += "Levemente acima do peso";
-      else if (imc < 35.0)
-        _result += "Obesidade Grau I";
-      else if (imc < 40.0)
-        _result += "Obesidade Grau II";
-      else
-        _result += "Obesidade Grau IIII";
+      _result = pessoa.classify();
+      // 5. Aplicar uma escala de cores para o resultado da classificação do IMC:
+      _resultColor = pessoa._scaleColor;
     });
+  }
+
+  Widget buildGenderLabel() {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 18.0),
+      child: Text(
+        "Sexo:",
+        textAlign: TextAlign.left,
+      ),
+    );
+  }
+
+  /// Função que cria um switch com uma label, uma variável para o valor
+  /// (se está selecionado ou não) e uma função para quando marcar o switch
+  Widget buildSwitch(String label, bool value, ValueChanged<bool> onChanged) {
+    return new SwitchListTile(
+      value: value,
+      onChanged: onChanged,
+      title: new Text(label),
+    );
   }
 
   Widget buildCalculateButton() {
@@ -120,6 +156,12 @@ class _HomeState extends State<Home> {
       child: Text(
         _result,
         textAlign: TextAlign.center,
+        // 6. Aumentar o texto do resultado do IMC (número) e também colocar em negrito:
+        style: TextStyle(
+          fontWeight: FontWeight.bold, // negrito
+          fontSize: 22, // tamanho do texto
+          color: _resultColor,
+        ),
       ),
     );
   }
@@ -134,5 +176,68 @@ class _HomeState extends State<Home> {
         return text.isEmpty ? error : null;
       },
     );
+  }
+}
+
+/// 3. Criar um classe Pessoa com os atributos (peso, altura e gênero),
+/// criar métodos para calcular IMC e classificar:
+class Pessoa {
+  double _weight;
+  double _heigth;
+  double _imc;
+  bool _isFemale;
+  Color _scaleColor;
+
+  Pessoa(double weight, double heigth, bool isFemale) {
+    _weight = weight;
+    _heigth = heigth;
+    _isFemale = isFemale;
+  }
+
+  double calculateImc() {
+    _imc = _weight / (_heigth * _heigth);
+    return _imc;
+  }
+
+  String classify() {
+    String result;
+    result = "IMC = ${_imc.toStringAsPrecision(2)}\n";
+    // 2. Corrigir o calculo de acordo com o gênero (masculino e feminino);
+    if (_isFemale) {
+      if (_imc < 19.1) {
+        result += "Abaixo do peso";
+        _scaleColor = Colors.blue;
+      } else if (_imc < 25.9) {
+        result += "Peso ideal";
+        _scaleColor = Colors.green;
+      } else if (_imc < 27.4) {
+        result += "Pouco acima do peso";
+        _scaleColor = Colors.yellow;
+      } else if (_imc < 32.4) {
+        result += "Acima do peso";
+        _scaleColor = Colors.orange;
+      } else {
+        result += "Obesidade";
+        _scaleColor = Colors.red;
+      }
+    } else {
+      if (_imc < 20.7) {
+        result += "Abaixo do peso";
+        _scaleColor = Colors.blue;
+      } else if (_imc < 26.5) {
+        result += "Peso ideal";
+        _scaleColor = Colors.green;
+      } else if (_imc < 27.9) {
+        result += "Pouco acima do peso";
+        _scaleColor = Colors.yellow;
+      } else if (_imc < 31.2) {
+        result += "Acima do peso";
+        _scaleColor = Colors.orange;
+      } else {
+        result += "Obesidade";
+        _scaleColor = Colors.red;
+      }
+    }
+    return result;
   }
 }
