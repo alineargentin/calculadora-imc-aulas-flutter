@@ -1,5 +1,7 @@
 # Calculadora de IMC
 
+// GRUPO: ALINE ROBERTA ARGENTIN - FELIPE AMBROSINI/ DANTRICIA MARIA / LUCAS PIRES
+
 Aplicativo de uma calculadora de IMC criado para disciplina de Programação Mobile.
 
 Tutorial de criação deste app: http://bit.ly/2Zry7Uh
